@@ -11,7 +11,9 @@ import (
 
 func main() {
 	outputFilename := flag.String("o", "assets.go", "Name of output go file.")
-	packageName := flag.String("p", "", "Package Name - defaults to dir of output go file")
+	packageName := flag.String("p", "", "Package Name - defaults to dir of output go file.")
+	width := flag.Int("w", 72, "Width between speechmarks per line.")
+
 	flag.Parse()
 
 	fo, err := os.OpenFile(*outputFilename, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0775)
@@ -31,7 +33,7 @@ func main() {
 	fo.WriteString("package " + *packageName + "\n\nconst (")
 
 	for _, fileName := range flag.Args() {
-		if err := writeFile(fo, fileName); err != nil {
+		if err := writeFile(fo, fileName, *width); err != nil {
 			log.Fatal(err)
 		}
 	}
@@ -39,7 +41,7 @@ func main() {
 	fo.WriteString(")\n")
 }
 
-func writeFile(fo io.Writer, fileName string) error {
+func writeFile(fo io.Writer, fileName string, width int) error {
 	fi, err := os.Open(fileName)
 	if err != nil {
 		return err
@@ -48,7 +50,7 @@ func writeFile(fo io.Writer, fileName string) error {
 	if _, err := fo.Write([]byte("\n\t" + strings.Replace(fileName, ".", "_", -1) + " = \"")); err != nil {
 		return err
 	}
-	if _, err := io.Copy(&HexWriter{&DivideWriter{fo, 72, []byte("\" +\n\t\t\""), 0}}, fi); err != nil {
+	if _, err := io.Copy(&HexWriter{&DivideWriter{fo, width - width%4, []byte("\" +\n\t\t\""), 0}}, fi); err != nil {
 		return err
 	}
 	if _, err := fo.Write([]byte("\"\n")); err != nil {
@@ -61,24 +63,24 @@ type DivideWriter struct {
 	io.Writer
 	Length   int
 	Divider  []byte
-	position int
+	Position int
 }
 
 func (l *DivideWriter) Write(data []byte) (n int, err error) {
 	var nn int
-	for len(data)+l.position > l.Length {
-		if nn, err = l.Writer.Write(data[:l.Length-l.position]); err != nil {
+	for len(data)+l.Position > l.Length {
+		if nn, err = l.Writer.Write(data[:l.Length-l.Position]); err != nil {
 			return n + nn, err
 		}
 		n += nn
 		if nn, err = l.Writer.Write(l.Divider); err != nil {
 			return n, err
 		}
-		data = data[l.Length-l.position:]
-		l.position = 0
+		data = data[l.Length-l.Position:]
+		l.Position = 0
 	}
 	l.Writer.Write(data)
-	l.position += len(data)
+	l.Position += len(data)
 	n += len(data)
 	return
 }
