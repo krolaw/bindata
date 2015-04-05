@@ -17,7 +17,7 @@ Or using go generate:
 	go build -o $GOPATH/bin/bindata $GOPATH/src/github/krolaw/bindata/bindata.go
 
 ## Gotchas
-Due to [issue #9035](https://github.com/golang/go/issues/9035), you may need to
+Due to [Go issue (#9035)](https://github.com/golang/go/issues/9035), you may need to
 increase the line width to reduce the number of lines bindata generates.
 
 ## Alternatives
